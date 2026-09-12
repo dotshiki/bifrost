@@ -251,7 +251,7 @@ async fn run_system_proxy_operation(
     .await
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 fn load_current_system_proxy_status(
     manager: Option<SharedSystemProxyManager>,
 ) -> Result<(bifrost_core::ProxyBackup, bool), String> {
@@ -264,7 +264,7 @@ fn load_current_system_proxy_status(
     Ok((proxy, managed_by_bifrost))
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn load_current_system_proxy_status(
     _manager: Option<SharedSystemProxyManager>,
 ) -> Result<(bifrost_core::ProxyBackup, bool), String> {
@@ -285,7 +285,7 @@ fn system_proxy_status_response(
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 fn apply_system_proxy_blocking(
     manager: SharedSystemProxyManager,
     enabled: bool,
@@ -328,7 +328,7 @@ fn apply_system_proxy_blocking(
     }
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn apply_system_proxy_blocking(
     _manager: SharedSystemProxyManager,
     _enabled: bool,
@@ -1090,7 +1090,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     #[tokio::test]
     async fn unsupported_platform_workers_return_errors_without_os_calls() {
         assert!(load_current_system_proxy_status(None)

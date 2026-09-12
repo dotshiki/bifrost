@@ -3111,7 +3111,7 @@ while True:
         }
     }
 
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     #[test]
     fn managed_restart_is_not_attempted_when_system_proxy_is_unsupported() {
         let dir = tempfile::tempdir().unwrap();

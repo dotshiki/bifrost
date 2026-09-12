@@ -417,12 +417,12 @@ impl SystemProxyManager {
     }
 
     pub fn is_supported() -> bool {
-        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
         {
             Sysproxy::is_support()
         }
 
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         {
             false
         }
@@ -3556,7 +3556,7 @@ mod tests {
     #[test]
     fn enable_disable_unsupported_on_non_macos_windows() {
         // On Linux is_supported() is false, so enable returns a Config error.
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         {
             let dir = tempfile::tempdir().unwrap();
             let mut manager = SystemProxyManager::new(dir.path().to_path_buf());
@@ -3570,7 +3570,10 @@ mod tests {
         println!("System proxy supported: {}", supported);
         #[cfg(any(target_os = "macos", target_os = "windows"))]
         assert_eq!(supported, Sysproxy::is_support());
-        #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+        // Linux：值取决于桌面环境，只断言"能被调用且不 panic"，不断言具体值
+        #[cfg(target_os = "linux")]
+        let _ = supported;
+        #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
         assert!(!supported);
     }
 
