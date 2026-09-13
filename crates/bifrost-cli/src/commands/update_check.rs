@@ -68,6 +68,10 @@ fn is_ci_environment() -> bool {
         || std::env::var_os("CIRCLECI").is_some()
 }
 
+fn is_check_update() -> bool {
+    false
+}
+
 pub fn get_latest_version() -> Option<VersionCache> {
     if let Some(cache) = read_cache() {
         if is_cache_valid(&cache) {
@@ -117,6 +121,10 @@ pub fn get_latest_version_fresh_with_diagnostics() -> Result<VersionCache, Strin
 
 pub fn check_and_print_update_notice() {
     if is_ci_environment() {
+        return;
+    }
+
+    if !is_check_update() {
         return;
     }
 

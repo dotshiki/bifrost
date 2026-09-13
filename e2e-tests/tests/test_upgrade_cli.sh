@@ -239,6 +239,11 @@ EOF
 }
 
 test_new_version_notice() {
+	# fork: update_check.rs 中 is_check_update() 被硬编码为 false，
+    # 新版本提示被无条件禁用，本用例的三个特征不可能出现。
+    # 若将来恢复提示逻辑，删除此 skip 恢复断言。
+    skip "fork 禁用了新版本提示 (is_check_update 恒为 false)"
+	return
     header "测试新版本提示显示"
 
     if [[ -z "$TEST_DATA_DIR" ]] || [[ ! -d "$TEST_DATA_DIR" ]]; then
