@@ -34,6 +34,35 @@ permissions:
   contents: write
 
 jobs:
+  check-secrets:
+    name: Check Distribution Secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_homebrew: ${{ steps.check.outputs.has_homebrew }}
+      has_npm: ${{ steps.check.outputs.has_npm }}
+    steps:
+      - name: Check secrets availability
+        id: check
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [[ -n "${HOMEBREW_TAP_TOKEN}" ]]; then
+            echo "✅ HOMEBREW_TAP_TOKEN is configured"
+            echo "has_homebrew=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⏭️  HOMEBREW_TAP_TOKEN not configured, Homebrew distribution will be skipped"
+            echo "has_homebrew=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ -n "${NPM_TOKEN}" ]]; then
+            echo "✅ NPM_TOKEN is configured"
+            echo "has_npm=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⏭️  NPM_TOKEN not configured, npm distribution will be skipped"
+            echo "has_npm=false" >> "$GITHUB_OUTPUT"
+          fi
+
   prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
@@ -58,12 +87,12 @@ jobs:
           else
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
             LATEST_VERSION="${LATEST_TAG#v}"
-            
+
             IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_VERSION%%-*}"
             MAJOR=${MAJOR:-0}
             MINOR=${MINOR:-0}
             PATCH=${PATCH:-0}
-            
+
             case "${{ inputs.version_type }}" in
               major)
                 MAJOR=$((MAJOR + 1))
@@ -78,16 +107,16 @@ jobs:
                 PATCH=$((PATCH + 1))
                 ;;
             esac
-            
+
             VERSION="${MAJOR}.${MINOR}.${PATCH}"
-            
+
             if [[ -n "${{ inputs.prerelease }}" ]]; then
               VERSION="${VERSION}-${{ inputs.prerelease }}"
               IS_PRERELEASE="true"
             else
               IS_PRERELEASE="false"
             fi
-            
+
             TAG="v${VERSION}"
           fi
 
@@ -564,28 +593,28 @@ jobs:
           if [[ -n "$PREV_TAG" ]]; then
             echo "## What's Changed" >> CHANGELOG.md
             echo "" >> CHANGELOG.md
-            
+
             FEATURES=$(git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s (%h)" --grep="^feat" 2>/dev/null || true)
             if [[ -n "$FEATURES" ]]; then
               echo "### 🚀 Features" >> CHANGELOG.md
               echo "$FEATURES" >> CHANGELOG.md
               echo "" >> CHANGELOG.md
             fi
-            
+
             FIXES=$(git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s (%h)" --grep="^fix" 2>/dev/null || true)
             if [[ -n "$FIXES" ]]; then
               echo "### 🐛 Bug Fixes" >> CHANGELOG.md
               echo "$FIXES" >> CHANGELOG.md
               echo "" >> CHANGELOG.md
             fi
-            
+
             OTHERS=$(git log "${PREV_TAG}..${TAG}" --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^fix" 2>/dev/null || true)
             if [[ -n "$OTHERS" ]]; then
               echo "### 📝 Other Changes" >> CHANGELOG.md
               echo "$OTHERS" >> CHANGELOG.md
               echo "" >> CHANGELOG.md
             fi
-            
+
             echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG}" >> CHANGELOG.md
           elif [[ -z "$RELEASE_NOTES" ]]; then
             echo "🎉 Initial release!" >> CHANGELOG.md
@@ -619,10 +648,11 @@ jobs:
             ## 📥 Installation
 
             ### Quick Install (Recommended)
+            
             ```bash
             curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install-binary.sh | bash
             ```
-
+            
             On macOS and Windows, the quick installer installs both the CLI and the matching desktop app. Use `--no-desktop` for a CLI-only install; platforms without desktop assets install the CLI only.
 
             ### npm
@@ -679,8 +709,8 @@ jobs:
 
   update-homebrew:
     name: Update Homebrew Formula
-    needs: [prepare, release, build-desktop]
-    if: needs.prepare.outputs.is_prerelease != 'true'
+    needs: [check-secrets, prepare, release, build-desktop]
+    if: needs.prepare.outputs.is_prerelease != 'true' && needs.check-secrets.outputs.has_homebrew == 'true'
     runs-on: ubuntu-latest
     env:
       MAX_VERSIONED_FORMULAS: 5
@@ -718,7 +748,7 @@ jobs:
             local version="$2"
             local intel_sha="$3"
             local arm_sha="$4"
-            
+
             cat << FORMULA
           class ${class_name} < Formula
             desc "High-performance HTTP/HTTPS/SOCKS5 proxy server written in Rust"
@@ -827,7 +857,8 @@ jobs:
 
   publish-npm:
     name: Publish npm Packages
-    needs: [prepare, build-cli, release]
+    needs: [check-secrets, prepare, build-cli, release]
+    if: needs.check-secrets.outputs.has_npm == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
