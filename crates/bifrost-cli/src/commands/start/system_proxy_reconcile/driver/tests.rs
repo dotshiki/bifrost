@@ -621,7 +621,9 @@ fn direct_start_enable_and_configured_default_preserve_bypass() {
     );
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+// Linux gained a real system-proxy backend, so the unsupported-platform fence
+// below only applies to targets that still lack one.
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn concrete_unsupported_backend_is_observational_and_cannot_acquire_or_release() {
     let (_dir, config, _state) = fixture(Instant::now());

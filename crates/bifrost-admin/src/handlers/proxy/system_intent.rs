@@ -161,7 +161,7 @@ where
 
 /// The desired flag and OS mutation share the reconciler's manager lock. Always
 /// re-read disk after taking it: a request may have waited behind a newer intent.
-#[cfg(any(target_os = "macos", target_os = "windows", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", test))]
 pub(super) fn apply_system_proxy_operation_locked(
     operation: SystemProxyOperation,
     mutate: impl FnOnce(&mut SystemProxyManager, u16) -> Result<(), String>,
@@ -188,7 +188,7 @@ pub(super) fn apply_system_proxy_operation_locked(
     })
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", test))]
 fn apply_system_proxy_operation_locked_with(
     operation: SystemProxyOperation,
     mutate: impl FnOnce(&mut SystemProxyManager, u16) -> Result<(), String>,
@@ -229,7 +229,7 @@ fn apply_system_proxy_operation_locked_with(
     result
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", test))]
 pub(super) fn accepted_system_proxy_intent_is_current(
     state: &SharedAdminState,
     revision: u64,
@@ -242,7 +242,7 @@ pub(super) fn accepted_system_proxy_intent_is_current(
         && state.port() == target_port)
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", test))]
 fn newer_system_proxy_disable_is_current(
     state: &SharedAdminState,
     previous_revision: u64,
@@ -256,7 +256,7 @@ fn newer_system_proxy_disable_is_current(
     )
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows", test))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", test))]
 fn persisted_system_proxy_intent(
     state: &SharedAdminState,
 ) -> bifrost_core::Result<SystemProxyConfig> {

@@ -524,15 +524,14 @@ fn system_proxy_disable_outcome_eq() {
     assert!(format!("{:?}", SystemProxyDisableOutcome::NotEnabled).contains("NotEnabled"));
 }
 
+// Only targets without a system-proxy backend take this path; on macOS,
+// Windows and Linux `enable()` would touch real OS settings.
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn enable_disable_unsupported_on_non_macos_windows() {
-    // On Linux is_supported() is false, so enable returns a Config error.
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        let dir = tempfile::tempdir().unwrap();
-        let mut manager = SystemProxyManager::new(dir.path().to_path_buf());
-        assert!(manager.enable("127.0.0.1", 18880, None).is_err());
-    }
+    let dir = tempfile::tempdir().unwrap();
+    let mut manager = SystemProxyManager::new(dir.path().to_path_buf());
+    assert!(manager.enable("127.0.0.1", 18880, None).is_err());
 }
 
 #[test]
@@ -541,7 +540,7 @@ fn test_is_supported() {
     println!("System proxy supported: {}", supported);
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     assert_eq!(supported, Sysproxy::is_support());
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     assert!(!supported);
 }
 

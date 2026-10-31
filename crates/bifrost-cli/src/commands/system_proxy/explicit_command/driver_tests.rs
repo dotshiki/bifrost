@@ -443,7 +443,9 @@ fn late_enable_after_disable_and_before_guard_never_gets_replayed() {
     assert_eq!(proxy.calls, ["enable"]);
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+// Linux reports `is_supported()` as true once Linux support landed, so this
+// unsupported-platform adapter fence only applies to other targets.
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn unsupported_real_adapter_never_acquires_or_changes_os_settings() {
     assert!(!SystemProxyManager::is_supported());

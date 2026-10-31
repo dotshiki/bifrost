@@ -34,6 +34,35 @@ permissions:
   contents: write
 
 jobs:
+  check-secrets:
+    name: Check Distribution Secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has_homebrew: ${{ steps.check.outputs.has_homebrew }}
+      has_npm: ${{ steps.check.outputs.has_npm }}
+    steps:
+      - name: Check secrets availability
+        id: check
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [[ -n "${HOMEBREW_TAP_TOKEN}" ]]; then
+            echo "✅ HOMEBREW_TAP_TOKEN is configured"
+            echo "has_homebrew=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⏭️  HOMEBREW_TAP_TOKEN not configured, Homebrew distribution will be skipped"
+            echo "has_homebrew=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [[ -n "${NPM_TOKEN}" ]]; then
+            echo "✅ NPM_TOKEN is configured"
+            echo "has_npm=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "⏭️  NPM_TOKEN not configured, npm distribution will be skipped"
+            echo "has_npm=false" >> "$GITHUB_OUTPUT"
+          fi
+
   prepare:
     name: Prepare Release
     runs-on: ubuntu-latest
@@ -690,8 +719,8 @@ jobs:
 
   update-homebrew:
     name: Update Homebrew Formula
-    needs: [prepare, release, build-desktop]
-    if: needs.prepare.outputs.is_prerelease != 'true'
+    needs: [check-secrets, prepare, release, build-desktop]
+    if: needs.prepare.outputs.is_prerelease != 'true' && needs.check-secrets.outputs.has_homebrew == 'true'
     runs-on: ubuntu-latest
     env:
       MAX_VERSIONED_FORMULAS: 5
@@ -838,7 +867,8 @@ jobs:
 
   publish-npm:
     name: Publish npm Packages
-    needs: [prepare, build-cli, release]
+    needs: [check-secrets, prepare, build-cli, release]
+    if: needs.check-secrets.outputs.has_npm == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

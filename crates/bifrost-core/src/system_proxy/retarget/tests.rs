@@ -31,6 +31,9 @@ fn state(phase: ManagedSystemProxyPhase) -> ManagedProxyState {
     }
 }
 
+// `is_supported()` is always true on Linux since Linux support landed, so the
+// unsupported-platform fence only holds on other targets.
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn unsupported_platform_never_evaluates_action_predicates_or_writes_state() {
     let dir = tempfile::tempdir().unwrap();

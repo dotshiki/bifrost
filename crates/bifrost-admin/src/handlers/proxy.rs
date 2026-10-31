@@ -243,7 +243,10 @@ where
         .map_err(|error| format!("System proxy {operation} worker failed: {error}"))?
 }
 
-#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
+#[cfg_attr(
+    not(any(target_os = "macos", target_os = "windows", target_os = "linux")),
+    allow(dead_code)
+)]
 struct SystemProxyOperation {
     state: SharedAdminState,
     enabled: bool,
@@ -255,7 +258,7 @@ async fn run_system_proxy_operation(operation: SystemProxyOperation) -> Result<(
     run_system_proxy_worker("operation", move || apply_system_proxy_blocking(operation)).await
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 fn load_current_system_proxy_status(
     manager: Option<SharedSystemProxyManager>,
 ) -> Result<(bifrost_core::ProxyBackup, bool), String> {
@@ -268,7 +271,7 @@ fn load_current_system_proxy_status(
     Ok((proxy, managed_by_bifrost))
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn load_current_system_proxy_status(
     _manager: Option<SharedSystemProxyManager>,
 ) -> Result<(bifrost_core::ProxyBackup, bool), String> {
@@ -289,7 +292,7 @@ fn system_proxy_status_response(
     }
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 fn apply_system_proxy_blocking(operation: SystemProxyOperation) -> Result<(), String> {
     let enabled = operation.enabled;
     let bypass = operation.bypass.clone();
@@ -316,7 +319,9 @@ fn apply_system_proxy_blocking(operation: SystemProxyOperation) -> Result<(), St
         let result = if enabled {
             manager.enable_guarded(host, target_port, Some(&bypass), accepted)
         } else if let Some(generation) = generation.as_deref() {
-            #[cfg(target_os = "macos")]
+            // Linux shares macOS' explicit-disable semantics: restore the
+            // saved original settings and release ownership.
+            #[cfg(any(target_os = "macos", target_os = "linux"))]
             {
                 manager.disable_managed_explicit_if_generation_guarded(generation, accepted)
             }
@@ -367,7 +372,7 @@ fn apply_system_proxy_blocking(operation: SystemProxyOperation) -> Result<(), St
     })
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 fn apply_system_proxy_blocking(_operation: SystemProxyOperation) -> Result<(), String> {
     Err("System proxy is not supported on this platform".to_string())
 }
@@ -984,7 +989,7 @@ mod tests {
         }
     }
 
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
     #[tokio::test]
     async fn unsupported_platform_workers_return_errors_without_os_calls() {
         assert!(load_current_system_proxy_status(None)

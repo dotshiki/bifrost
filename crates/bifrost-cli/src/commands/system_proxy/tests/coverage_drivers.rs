@@ -537,7 +537,9 @@ fn in_isolated_home(name: &str, run: impl FnOnce()) {
     assert!(output.contains("running 1 test"), "{output}");
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+// Linux reports `is_supported()` as true once Linux support landed; these
+// unsupported-platform cleanup fences only apply to other targets.
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn isolated_cleanup_and_parent_exit_execute_production_without_os_mutation() {
     in_isolated_home("commands::system_proxy::tests::coverage_drivers::isolated_cleanup_and_parent_exit_execute_production_without_os_mutation", || {
@@ -565,7 +567,7 @@ fn isolated_cleanup_and_parent_exit_execute_production_without_os_mutation() {
     });
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+#[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
 #[test]
 fn isolated_cleanup_failure_respects_fail_closed_and_desktop_policy() {
     in_isolated_home("commands::system_proxy::tests::coverage_drivers::isolated_cleanup_failure_respects_fail_closed_and_desktop_policy", || {
